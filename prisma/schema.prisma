@@ -1,0 +1,135 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model Cliente {
+  id_cliente     BigInt   @id @default(autoincrement()) @db.UnsignedBigInt @map("id_cliente")
+  nombre         String   @map("nombre")
+  apellido       String   @map("apellido")
+  fecha_registro DateTime @default(now()) @map("fecha_registro")
+  telefono       String?  @map("telefono")
+  correo         String   @map("correo")
+  direccion      String?  @map("direccion")
+  nit_ci         String   @map("nit_ci")
+  estado         Int      @default(1) @map("estado")
+  created_at     DateTime? @map("created_at")
+  updated_at     DateTime? @map("updated_at")
+  ordenes        Orden[]  @relation("cliente_ordenes")
+
+  @@map("clientes")
+  @@unique([correo], map: "uk_clientes_correo")
+  @@unique([nit_ci], map: "uk_clientes_nit_ci")
+}
+
+model Personal {
+  id_personal   BigInt   @id @default(autoincrement()) @db.UnsignedBigInt @map("id_personal")
+  nombre        String   @map("nombre")
+  apellido      String   @map("apellido")
+  cargo         String?  @map("cargo")
+  telefono      String?  @map("telefono")
+  correo        String   @map("correo")
+  estado        Int      @default(1) @map("estado")
+  created_at    DateTime? @map("created_at")
+  updated_at    DateTime? @map("updated_at")
+  ordenes       Orden[]  @relation("personal_ordenes")
+
+  @@map("personal")
+  @@unique([correo], map: "uk_personal_correo")
+}
+
+model MarcaEquipo {
+  id_marca     BigInt   @id @default(autoincrement()) @db.UnsignedBigInt @map("id_marca")
+  nombre_marca String   @map("nombre_marca")
+  pais_origen  String?  @map("pais_origen")
+  estado       Int      @default(1) @map("estado")
+  created_at   DateTime? @map("created_at")
+  updated_at   DateTime? @map("updated_at")
+  equipos      Equipo[]
+
+  @@map("marcas_equipo")
+}
+
+model Modelo {
+  id_modelo     BigInt   @id @default(autoincrement()) @db.UnsignedBigInt @map("id_modelo")
+  nombre_modelo String   @map("nombre_modelo")
+  estado        Int      @default(1) @map("estado")
+  created_at    DateTime? @map("created_at")
+  updated_at    DateTime? @map("updated_at")
+  equipos       Equipo[]
+
+  @@map("modelos")
+}
+
+model Equipo {
+  id_equipo     BigInt   @id @default(autoincrement()) @db.UnsignedBigInt @map("id_equipo")
+  numero_serie  String   @unique @map("numero_serie")
+  color         String?  @map("color")
+  accesorios    String?  @map("accesorios")
+  estado        Int      @default(1) @map("estado")
+  id_marca      BigInt   @map("id_marca") @db.UnsignedBigInt
+  id_modelo     BigInt   @map("id_modelo") @db.UnsignedBigInt
+  created_at    DateTime? @map("created_at")
+  updated_at    DateTime? @map("updated_at")
+
+  marca         MarcaEquipo @relation(fields: [id_marca], references: [id_marca])
+  modelo        Modelo      @relation(fields: [id_modelo], references: [id_modelo])
+  diagnosticos  Diagnostico[]
+
+  @@map("equipos")
+  @@unique([numero_serie], map: "uk_equipos_numero_serie")
+}
+
+enum OrdenEstado {
+  pendiente
+  en_proceso
+  finalizada
+  Anulado
+}
+
+model Orden {
+  id_orden      BigInt   @id @default(autoincrement()) @db.UnsignedBigInt @map("id_orden")
+  fecha_ingreso DateTime @map("fecha_ingreso")
+  fecha_entrega DateTime? @map("fecha_entrega")
+  problema_reportado String @map("problema_reportado")
+  costo         Decimal  @default(0.00) @map("costo") @db.Decimal(10, 2)
+  estado        OrdenEstado @default(pendiente) @map("estado")
+  id_cliente    BigInt   @map("id_cliente") @db.UnsignedBigInt
+  id_personal   BigInt   @map("id_personal") @db.UnsignedBigInt
+  created_at    DateTime? @map("created_at")
+  updated_at    DateTime? @map("updated_at")
+
+  cliente       Cliente   @relation("cliente_ordenes", fields: [id_cliente], references: [id_cliente])
+  personal      Personal  @relation("personal_ordenes", fields: [id_personal], references: [id_personal])
+  diagnosticos  Diagnostico[]
+
+  @@map("orden_servicio")
+}
+
+enum DiagnosticoEstado {
+  pendiente
+  confirmado
+  reparado
+}
+
+model Diagnostico {
+  id_diagnostico BigInt   @id @default(autoincrement()) @db.UnsignedBigInt @map("id_diagnostico")
+  id_orden       BigInt   @map("id_orden") @db.UnsignedBigInt
+  id_equipo      BigInt   @map("id_equipo") @db.UnsignedBigInt
+  descripcion    String   @map("descripcion")
+  solucion       String?  @map("solucion")
+  fecha          DateTime @map("fecha")
+  observacion    String?  @map("observacion")
+  estado         DiagnosticoEstado @default(pendiente) @map("estado")
+  created_at     DateTime? @map("created_at")
+  updated_at     DateTime? @map("updated_at")
+
+  orden          Orden   @relation(fields: [id_orden], references: [id_orden])
+  equipo         Equipo  @relation(fields: [id_equipo], references: [id_equipo])
+
+  @@map("diagnosticos")
+}
