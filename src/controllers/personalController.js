@@ -22,9 +22,9 @@ const getById = async (req, res, next) => {
 
 const create = async (req, res, next) => {
   try {
-    const { nombre, apellido, cargo, telefono, correo, fecha_ingreso, estado } = req.body;
+    const { nombre, apellido, cargo, telefono, correo, estado } = req.body;
     const trabajador = await prisma.personal.create({
-      data: { nombre, apellido, cargo, telefono, correo, fecha_ingreso: fecha_ingreso ? new Date(fecha_ingreso) : undefined, estado },
+      data: { nombre, apellido, cargo, telefono, correo, estado },
     });
     res.status(201).json(trabajador);
   } catch (error) {
@@ -35,10 +35,10 @@ const create = async (req, res, next) => {
 const update = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { nombre, apellido, cargo, telefono, correo, fecha_ingreso, estado } = req.body;
+    const { nombre, apellido, cargo, telefono, correo, estado } = req.body;
     const trabajador = await prisma.personal.update({
       where: { id_personal: BigInt(id) },
-      data: { nombre, apellido, cargo, telefono, correo, fecha_ingreso: fecha_ingreso ? new Date(fecha_ingreso) : undefined, estado },
+      data: { nombre, apellido, cargo, telefono, correo, estado },
     });
     res.json(trabajador);
   } catch (error) {

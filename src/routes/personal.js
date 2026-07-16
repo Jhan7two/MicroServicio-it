@@ -31,16 +31,14 @@
  *                 type: string
  *               correo:
  *                 type: string
- *               especialidad:
- *                 type: string
- *               fecha_ingreso:
- *                 type: string
- *                 format: date
  *               estado:
- *                 type: boolean
+ *                 type: integer
+ *                 description: "Estado del trabajador (1 para activo, 0 para inactivo)"
  *             required:
  *               - nombre
  *               - apellido
+ *               - cargo
+ *               - correo
  *     responses:
  *       201:
  *         description: Personal creado
@@ -86,13 +84,9 @@
  *                 type: string
  *               correo:
  *                 type: string
- *               especialidad:
- *                 type: string
- *               fecha_ingreso:
- *                 type: string
- *                 format: date
  *               estado:
- *                 type: boolean
+ *                 type: integer
+ *                 description: "Estado del trabajador (1 para activo, 0 para inactivo)"
  *     responses:
  *       200:
  *         description: Personal actualizado
