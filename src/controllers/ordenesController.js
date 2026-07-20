@@ -84,8 +84,13 @@ const Actualizar = async (req, res, next) => {
 const remover = async (req, res, next) => {
   try {
     const { id } = req.params;
-    await prisma.orden.delete({ where: { id_orden: BigInt(id) } });
-    res.status(204).send();
+    // Soft delete: cambiar estado a "Anulado" en lugar de eliminar
+    const orden = await prisma.orden.update({
+      where: { id_orden: BigInt(id) },
+      data: { estado: 'Anulado' },
+      select: selectFields
+    });
+    res.json({ message: 'Orden anulada correctamente', orden });
   } catch (error) {
     next(error);
   }

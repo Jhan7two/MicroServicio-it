@@ -96,8 +96,13 @@ const Actualizar = async (req, res, next) => {
 const remover = async (req, res, next) => {
   try {
     const { id } = req.params;
-    await prisma.diagnostico.delete({ where: { id_diagnostico: BigInt(id) } });
-    res.status(204).send();
+    // Soft delete: cambiar estado a 0 (inactivo) en lugar de eliminar
+    const diagnostico = await prisma.diagnostico.update({
+      where: { id_diagnostico: BigInt(id) },
+      data: { estado: 'pendiente' }, // O el estado que indique "eliminado/inactivo"
+      select: myselect
+    });
+    res.json({ message: 'Diagnóstico desactivado correctamente', diagnostico });
   } catch (error) {
     next(error);
   }

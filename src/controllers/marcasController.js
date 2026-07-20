@@ -64,8 +64,13 @@ const Actualizar = async (req, res, next) => {
 const remover = async (req, res, next) => {
   try {
     const { id } = req.params;
-    await prisma.marcaEquipo.delete({ where: { id_marca: BigInt(id) } });
-    res.status(204).send();
+    // Soft delete: cambiar estado a 0 (inactivo) en lugar de eliminar
+    const marca = await prisma.marcaEquipo.update({
+      where: { id_marca: BigInt(id) },
+      data: { estado: 0 },
+      select: selectFields
+    });
+    res.json({ message: 'Marca desactivada correctamente', marca });
   } catch (error) {
     next(error);
   }

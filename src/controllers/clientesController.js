@@ -67,8 +67,13 @@ const Actualizar = async (req, res, next) => {
 const remover = async (req, res, next) => {
   try {
     const { id } = req.params;
-    await prisma.cliente.delete({ where: { id_cliente: BigInt(id) } });
-    res.status(204).send();
+    // Soft delete: cambiar estado a 0 (inactivo) en lugar de eliminar
+    const cliente = await prisma.cliente.update({
+      where: { id_cliente: BigInt(id) },
+      data: { estado: 0 },
+      select: myselect
+    });
+    res.json({ message: 'Cliente desactivado correctamente', cliente });
   } catch (error) {
     next(error);
   }
