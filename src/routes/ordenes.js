@@ -140,11 +140,11 @@ const validate = (req, res, next) => {
   next();
 };
 
-router.get('/', controller.getAll);
-router.get('/:id', controller.getById);
-router.get('/:id/diagnosticos', diagnosticosController.getByOrdenId);
-router.post('/', validations, validate, controller.create);
-router.put('/:id', validations, validate, controller.update);
-router.delete('/:id', controller.remove);
+router.get('/', controller.ObtenerTodos);
+router.get('/:id', controller.ObtenerPorId);
+router.get('/:id/diagnosticos', diagnosticosController.ObtenerPorOrdenId);
+router.post('/', validations, validate, controller.Crear);
+router.put('/:id', validations, validate, controller.Actualizar);
+router.delete('/:id', controller.remover);
 
 module.exports = router;

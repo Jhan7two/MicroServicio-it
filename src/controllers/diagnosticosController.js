@@ -1,18 +1,34 @@
 const prisma = require('../config/prisma');
 
-const getAll = async (req, res, next) => {
+const myselect = {
+  id_diagnostico: true,
+  id_orden: true,
+  id_equipo: true,
+  descripcion: true,
+  solucion: true,
+  fecha: true,
+  observacion: true,
+  estado: true,
+};
+
+const ObtenerTodos = async (req, res, next) => {
   try {
-    const diagnosticos = await prisma.diagnostico.findMany();
+    const diagnosticos = await prisma.diagnostico.findMany({
+      select: myselect,
+    });
     res.json(diagnosticos);
   } catch (error) {
     next(error);
   }
 };
 
-const getById = async (req, res, next) => {
+const ObtenerPorId = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const diagnostico = await prisma.diagnostico.findUnique({ where: { id_diagnostico: BigInt(id) } });
+    const diagnostico = await prisma.diagnostico.findUnique({
+      select: myselect,
+      where: { id_diagnostico: BigInt(id) },
+    });
     if (!diagnostico) return res.status(404).json({ error: 'Diagnóstico no encontrado' });
     res.json(diagnostico);
   } catch (error) {
@@ -20,17 +36,20 @@ const getById = async (req, res, next) => {
   }
 };
 
-const getByOrdenId = async (req, res, next) => {
+const ObtenerPorOrdenId = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const diagnosticos = await prisma.diagnostico.findMany({ where: { id_orden: BigInt(id) } });
+    const diagnosticos = await prisma.diagnostico.findMany({
+      select: myselect,
+      where: { id_orden: BigInt(id) },
+    });
     res.json(diagnosticos);
   } catch (error) {
     next(error);
   }
 };
 
-const create = async (req, res, next) => {
+const Crear = async (req, res, next) => {
   try {
     const { id_orden, id_equipo, descripcion, solucion, fecha, observacion, estado } = req.body;
     const diagnostico = await prisma.diagnostico.create({
@@ -43,6 +62,7 @@ const create = async (req, res, next) => {
         observacion,
         estado,
       },
+      select: myselect,
     });
     res.status(201).json(diagnostico);
   } catch (error) {
@@ -50,7 +70,7 @@ const create = async (req, res, next) => {
   }
 };
 
-const update = async (req, res, next) => {
+const Actualizar = async (req, res, next) => {
   try {
     const { id } = req.params;
     const { id_orden, id_equipo, descripcion, solucion, fecha, observacion, estado } = req.body;
@@ -65,6 +85,7 @@ const update = async (req, res, next) => {
         observacion,
         estado,
       },
+      select: myselect,
     });
     res.json(diagnostico);
   } catch (error) {
@@ -72,7 +93,7 @@ const update = async (req, res, next) => {
   }
 };
 
-const remove = async (req, res, next) => {
+const remover = async (req, res, next) => {
   try {
     const { id } = req.params;
     await prisma.diagnostico.delete({ where: { id_diagnostico: BigInt(id) } });
@@ -82,4 +103,4 @@ const remove = async (req, res, next) => {
   }
 };
 
-module.exports = { getAll, getById, getByOrdenId, create, update, remove };
+module.exports = { ObtenerTodos, ObtenerPorId, ObtenerPorOrdenId, Crear, Actualizar, remover };

@@ -1,6 +1,6 @@
 const prisma = require('../config/prisma');
 
-const getAll = async (req, res, next) => {
+const ObtenerTodos = async (req, res, next) => {
   try {
     const equipos = await prisma.equipo.findMany();
     res.json(equipos);
@@ -9,7 +9,7 @@ const getAll = async (req, res, next) => {
   }
 };
 
-const getById = async (req, res, next) => {
+const ObtenerPorId = async (req, res, next) => {
   try {
     const { id } = req.params;
     const equipo = await prisma.equipo.findUnique({ where: { id_equipo: BigInt(id) } });
@@ -20,7 +20,7 @@ const getById = async (req, res, next) => {
   }
 };
 
-const create = async (req, res, next) => {
+const Crear = async (req, res, next) => {
   try {
     const { id_marca, id_modelo, numero_serie, color, accesorios, estado } = req.body;
     const equipo = await prisma.equipo.create({
@@ -39,7 +39,7 @@ const create = async (req, res, next) => {
   }
 };
 
-const update = async (req, res, next) => {
+const Actualizar = async (req, res, next) => {
   try {
     const { id } = req.params;
     const { id_marca, id_modelo, numero_serie, color, accesorios, estado } = req.body;
@@ -60,7 +60,7 @@ const update = async (req, res, next) => {
   }
 };
 
-const remove = async (req, res, next) => {
+const remover = async (req, res, next) => {
   try {
     const { id } = req.params;
     await prisma.equipo.delete({ where: { id_equipo: BigInt(id) } });
@@ -70,4 +70,4 @@ const remove = async (req, res, next) => {
   }
 };
 
-module.exports = { getAll, getById, create, update, remove };
+module.exports = { ObtenerTodos, ObtenerPorId, Crear, Actualizar, remover };

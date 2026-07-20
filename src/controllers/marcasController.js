@@ -1,6 +1,6 @@
 const prisma = require('../config/prisma');
 
-const getAll = async (req, res, next) => {
+const ObtenerTodos = async (req, res, next) => {
   try {
     const marcas = await prisma.marcaEquipo.findMany();
     res.json(marcas);
@@ -9,7 +9,7 @@ const getAll = async (req, res, next) => {
   }
 };
 
-const getById = async (req, res, next) => {
+const ObtenerPorId = async (req, res, next) => {
   try {
     const { id } = req.params;
     const marca = await prisma.marcaEquipo.findUnique({ where: { id_marca: BigInt(id) } });
@@ -20,7 +20,7 @@ const getById = async (req, res, next) => {
   }
 };
 
-const create = async (req, res, next) => {
+const Crear = async (req, res, next) => {
   try {
     const { nombre_marca, pais_origen, estado } = req.body;
     const marca = await prisma.marcaEquipo.create({
@@ -32,7 +32,7 @@ const create = async (req, res, next) => {
   }
 };
 
-const update = async (req, res, next) => {
+const Actualizar = async (req, res, next) => {
   try {
     const { id } = req.params;
     const { nombre_marca, pais_origen, estado } = req.body;
@@ -46,7 +46,7 @@ const update = async (req, res, next) => {
   }
 };
 
-const remove = async (req, res, next) => {
+const remover = async (req, res, next) => {
   try {
     const { id } = req.params;
     await prisma.marcaEquipo.delete({ where: { id_marca: BigInt(id) } });
@@ -56,4 +56,4 @@ const remove = async (req, res, next) => {
   }
 };
 
-module.exports = { getAll, getById, create, update, remove };
+module.exports = { ObtenerTodos, ObtenerPorId, Crear, Actualizar, remover };
