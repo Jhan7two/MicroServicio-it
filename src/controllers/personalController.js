@@ -1,8 +1,21 @@
 const prisma = require('../config/prisma');
 
+// Configuración de campos a seleccionar (sin timestamps)
+const selectFields = {
+  id_personal: true,
+  nombre: true,
+  apellido: true,
+  cargo: true,
+  telefono: true,
+  correo: true,
+  estado: true
+};
+
 const ObtenerTodos = async (req, res, next) => {
   try {
-    const personal = await prisma.personal.findMany();
+    const personal = await prisma.personal.findMany({
+      select: selectFields
+    });
     res.json(personal);
   } catch (error) {
     next(error);
@@ -12,7 +25,10 @@ const ObtenerTodos = async (req, res, next) => {
 const ObtenerPorId = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const trabajador = await prisma.personal.findUnique({ where: { id_personal: BigInt(id) } });
+    const trabajador = await prisma.personal.findUnique({ 
+      where: { id_personal: BigInt(id) },
+      select: selectFields
+    });
     if (!trabajador) return res.status(404).json({ error: 'Personal no encontrado' });
     res.json(trabajador);
   } catch (error) {
@@ -25,6 +41,7 @@ const Crear = async (req, res, next) => {
     const { nombre, apellido, cargo, telefono, correo, estado } = req.body;
     const trabajador = await prisma.personal.create({
       data: { nombre, apellido, cargo, telefono, correo, estado },
+      select: selectFields
     });
     res.status(201).json(trabajador);
   } catch (error) {
@@ -39,6 +56,7 @@ const Actualizar = async (req, res, next) => {
     const trabajador = await prisma.personal.update({
       where: { id_personal: BigInt(id) },
       data: { nombre, apellido, cargo, telefono, correo, estado },
+      select: selectFields
     });
     res.json(trabajador);
   } catch (error) {

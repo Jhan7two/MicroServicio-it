@@ -1,8 +1,22 @@
 const prisma = require('../config/prisma');
 
+// Configuración de campos a seleccionar (sin timestamps)
+const selectFields = {
+  id_orden: true,
+  fecha_ingreso: true,
+  fecha_entrega: true,
+  problema_reportado: true,
+  costo: true,
+  estado: true,
+  id_cliente: true,
+  id_personal: true
+};
+
 const ObtenerTodos = async (req, res, next) => {
   try {
-    const ordenes = await prisma.orden.findMany();
+    const ordenes = await prisma.orden.findMany({
+      select: selectFields
+    });
     res.json(ordenes);
   } catch (error) {
     next(error);
@@ -12,7 +26,10 @@ const ObtenerTodos = async (req, res, next) => {
 const ObtenerPorId = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const orden = await prisma.orden.findUnique({ where: { id_orden: BigInt(id) } });
+    const orden = await prisma.orden.findUnique({ 
+      where: { id_orden: BigInt(id) },
+      select: selectFields
+    });
     if (!orden) return res.status(404).json({ error: 'Orden no encontrada' });
     res.json(orden);
   } catch (error) {
@@ -33,6 +50,7 @@ const Crear = async (req, res, next) => {
         costo: costo ? Number(costo) : undefined,
         estado,
       },
+      select: selectFields
     });
     res.status(201).json(orden);
   } catch (error) {
@@ -55,6 +73,7 @@ const Actualizar = async (req, res, next) => {
         costo: costo ? Number(costo) : undefined,
         estado,
       },
+      select: selectFields
     });
     res.json(orden);
   } catch (error) {

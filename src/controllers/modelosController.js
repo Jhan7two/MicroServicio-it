@@ -1,8 +1,17 @@
 const prisma = require('../config/prisma');
 
+// Configuración de campos a seleccionar (sin timestamps)
+const selectFields = {
+  id_modelo: true,
+  nombre_modelo: true,
+  estado: true
+};
+
 const ObtenerTodos = async (req, res, next) => {
   try {
-    const modelos = await prisma.modelo.findMany();
+    const modelos = await prisma.modelo.findMany({
+      select: selectFields
+    });
     res.json(modelos);
   } catch (error) {
     next(error);
@@ -12,7 +21,10 @@ const ObtenerTodos = async (req, res, next) => {
 const ObtenerPorId = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const modelo = await prisma.modelo.findUnique({ where: { id_modelo: BigInt(id) } });
+    const modelo = await prisma.modelo.findUnique({ 
+      where: { id_modelo: BigInt(id) },
+      select: selectFields
+    });
     if (!modelo) return res.status(404).json({ error: 'Modelo no encontrado' });
     res.json(modelo);
   } catch (error) {
@@ -25,6 +37,7 @@ const Crear = async (req, res, next) => {
     const { nombre_modelo, estado } = req.body;
     const modelo = await prisma.modelo.create({
       data: { nombre_modelo, estado },
+      select: selectFields
     });
     res.status(201).json(modelo);
   } catch (error) {
@@ -39,6 +52,7 @@ const Actualizar = async (req, res, next) => {
     const modelo = await prisma.modelo.update({
       where: { id_modelo: BigInt(id) },
       data: { nombre_modelo, estado },
+      select: selectFields
     });
     res.json(modelo);
   } catch (error) {

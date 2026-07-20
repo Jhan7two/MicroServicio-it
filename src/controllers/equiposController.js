@@ -1,8 +1,21 @@
 const prisma = require('../config/prisma');
 
+// Configuración de campos a seleccionar (sin timestamps)
+const selectFields = {
+  id_equipo: true,
+  numero_serie: true,
+  color: true,
+  accesorios: true,
+  estado: true,
+  id_marca: true,
+  id_modelo: true
+};
+
 const ObtenerTodos = async (req, res, next) => {
   try {
-    const equipos = await prisma.equipo.findMany();
+    const equipos = await prisma.equipo.findMany({
+      select: selectFields
+    });
     res.json(equipos);
   } catch (error) {
     next(error);
@@ -12,7 +25,10 @@ const ObtenerTodos = async (req, res, next) => {
 const ObtenerPorId = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const equipo = await prisma.equipo.findUnique({ where: { id_equipo: BigInt(id) } });
+    const equipo = await prisma.equipo.findUnique({ 
+      where: { id_equipo: BigInt(id) },
+      select: selectFields
+    });
     if (!equipo) return res.status(404).json({ error: 'Equipo no encontrado' });
     res.json(equipo);
   } catch (error) {
@@ -32,6 +48,7 @@ const Crear = async (req, res, next) => {
         accesorios,
         estado,
       },
+      select: selectFields
     });
     res.status(201).json(equipo);
   } catch (error) {
@@ -53,6 +70,7 @@ const Actualizar = async (req, res, next) => {
         accesorios,
         estado,
       },
+      select: selectFields
     });
     res.json(equipo);
   } catch (error) {
