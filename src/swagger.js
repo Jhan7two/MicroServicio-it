@@ -7,12 +7,30 @@ const options = {
       title: 'Microservicio Servicio Técnico',
       version: '1.0.0',
       description: 'API REST para gestionar clientes, personal, marcas, modelos, equipos, órdenes de servicio y diagnósticos.',
+      contact: {
+        name: 'Soporte Técnico',
+        email: 'soporte@empresa.com'
+      }
     },
     servers: [
       {
-        url: 'http://localhost:3000/api',
+        url: 'https://microservicio-it.onrender.com/api',
+        description: 'Servidor de Producción (Render)'
       },
+      {
+        url: 'http://localhost:3000/api',
+        description: 'Servidor de Desarrollo Local'
+      }
     ],
+    components: {
+      securitySchemes: {
+        bearerAuth: {
+          type: 'http',
+          scheme: 'bearer',
+          bearerFormat: 'JWT'
+        }
+      }
+    }
   },
   apis: ['./src/routes/*.js'],
 };
