@@ -29,7 +29,11 @@ const ObtenerPorId = async (req, res, next) => {
       select: myselect,
       where: { id_diagnostico: BigInt(id) },
     });
-    if (!diagnostico) return res.status(404).json({ error: 'Diagnóstico no encontrado' });
+    if (!diagnostico) {
+      const error = new Error('Diagnóstico no encontrado');
+      error.status = 404;
+      return next(error);
+    }
     res.json(diagnostico);
   } catch (error) {
     next(error);
@@ -39,6 +43,18 @@ const ObtenerPorId = async (req, res, next) => {
 const ObtenerPorOrdenId = async (req, res, next) => {
   try {
     const { id } = req.params;
+    
+    // Verificar que la orden existe
+    const ordenExiste = await prisma.orden.findUnique({
+      where: { id_orden: BigInt(id) }
+    });
+    
+    if (!ordenExiste) {
+      const error = new Error('La orden especificada no existe');
+      error.status = 404;
+      return next(error);
+    }
+    
     const diagnosticos = await prisma.diagnostico.findMany({
       select: myselect,
       where: { id_orden: BigInt(id) },
@@ -52,6 +68,41 @@ const ObtenerPorOrdenId = async (req, res, next) => {
 const Crear = async (req, res, next) => {
   try {
     const { id_orden, id_equipo, descripcion, solucion, fecha, observacion, estado } = req.body;
+    
+    // Verificar que la orden existe y no está anulada
+    const ordenExiste = await prisma.orden.findUnique({
+      where: { id_orden: BigInt(id_orden) }
+    });
+    
+    if (!ordenExiste) {
+      const error = new Error('La orden especificada no existe');
+      error.status = 400;
+      return next(error);
+    }
+    
+    if (ordenExiste.estado === 'Anulado') {
+      const error = new Error('No se puede crear un diagnóstico para una orden anulada');
+      error.status = 400;
+      return next(error);
+    }
+    
+    // Verificar que el equipo existe
+    const equipoExiste = await prisma.equipo.findUnique({
+      where: { id_equipo: BigInt(id_equipo) }
+    });
+    
+    if (!equipoExiste) {
+      const error = new Error('El equipo especificado no existe');
+      error.status = 400;
+      return next(error);
+    }
+    
+    if (equipoExiste.estado === 0) {
+      const error = new Error('No se puede crear un diagnóstico para un equipo desactivado');
+      error.status = 400;
+      return next(error);
+    }
+    
     const diagnostico = await prisma.diagnostico.create({
       data: {
         id_orden: BigInt(id_orden),
@@ -74,6 +125,43 @@ const Actualizar = async (req, res, next) => {
   try {
     const { id } = req.params;
     const { id_orden, id_equipo, descripcion, solucion, fecha, observacion, estado } = req.body;
+    
+    // Verificar que el diagnóstico existe
+    const diagnosticoExistente = await prisma.diagnostico.findUnique({
+      where: { id_diagnostico: BigInt(id) }
+    });
+    
+    if (!diagnosticoExistente) {
+      const error = new Error('El diagnóstico que intentas actualizar no existe');
+      error.status = 404;
+      return next(error);
+    }
+    
+    // Verificar relaciones si se cambian
+    if (id_orden) {
+      const ordenExiste = await prisma.orden.findUnique({
+        where: { id_orden: BigInt(id_orden) }
+      });
+      
+      if (!ordenExiste || ordenExiste.estado === 'Anulado') {
+        const error = new Error('La orden especificada no existe o está anulada');
+        error.status = 400;
+        return next(error);
+      }
+    }
+    
+    if (id_equipo) {
+      const equipoExiste = await prisma.equipo.findUnique({
+        where: { id_equipo: BigInt(id_equipo) }
+      });
+      
+      if (!equipoExiste || equipoExiste.estado === 0) {
+        const error = new Error('El equipo especificado no existe o está desactivado');
+        error.status = 400;
+        return next(error);
+      }
+    }
+    
     const diagnostico = await prisma.diagnostico.update({
       where: { id_diagnostico: BigInt(id) },
       data: {
@@ -96,13 +184,30 @@ const Actualizar = async (req, res, next) => {
 const remover = async (req, res, next) => {
   try {
     const { id } = req.params;
-    // Soft delete: cambiar estado a 0 (inactivo) en lugar de eliminar
+    
+    const diagnosticoExistente = await prisma.diagnostico.findUnique({
+      where: { id_diagnostico: BigInt(id) }
+    });
+    
+    if (!diagnosticoExistente) {
+      const error = new Error('El diagnóstico que intentas reiniciar no existe');
+      error.status = 404;
+      return next(error);
+    }
+    
+    if (diagnosticoExistente.estado === 'pendiente') {
+      const error = new Error('El diagnóstico ya está en estado pendiente');
+      error.status = 400;
+      return next(error);
+    }
+    
+    // Soft delete: cambiar estado a pendiente (reiniciar diagnóstico)
     const diagnostico = await prisma.diagnostico.update({
       where: { id_diagnostico: BigInt(id) },
-      data: { estado: 'pendiente' }, // O el estado que indique "eliminado/inactivo"
+      data: { estado: 'pendiente' },
       select: myselect
     });
-    res.json({ message: 'Diagnóstico desactivado correctamente', diagnostico });
+    res.json({ message: 'Diagnóstico reiniciado a estado pendiente', diagnostico });
   } catch (error) {
     next(error);
   }

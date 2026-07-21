@@ -2,7 +2,7 @@
  * @swagger
  * tags:
  *   name: Modelos
- *   description: Gestión de modelos
+ *   description: Gestión de modelos de equipos
  *
  * /modelos:
  *   get:
@@ -23,13 +23,19 @@
  *             properties:
  *               nombre_modelo:
  *                 type: string
+ *                 example: "Galaxy S24"
  *               estado:
  *                 type: integer
+ *                 example: 1
  *             required:
  *               - nombre_modelo
  *     responses:
  *       201:
- *         description: Modelo creado
+ *         description: Modelo creado exitosamente
+ *       400:
+ *         description: Errores de validación
+ *       409:
+ *         description: El modelo ya existe
  *
  * /modelos/{id}:
  *   get:
@@ -41,11 +47,12 @@
  *         required: true
  *         schema:
  *           type: integer
+ *           example: 1
  *     responses:
  *       200:
  *         description: Modelo encontrado
  *       404:
- *         description: No encontrado
+ *         description: Modelo no encontrado
  *   put:
  *     summary: Actualizar modelo
  *     tags: [Modelos]
@@ -55,6 +62,7 @@
  *         required: true
  *         schema:
  *           type: integer
+ *           example: 1
  *     requestBody:
  *       required: true
  *       content:
@@ -64,19 +72,21 @@
  *             properties:
  *               nombre_modelo:
  *                 type: string
- *               categoria:
- *                 type: string
- *               año_lanzamiento:
- *                 type: integer
- *               descripcion:
- *                 type: string
+ *                 example: "Galaxy S24 Ultra"
  *               estado:
- *                 type: boolean
+ *                 type: integer
+ *                 example: 1
  *     responses:
  *       200:
  *         description: Modelo actualizado
+ *       400:
+ *         description: Errores de validación
+ *       404:
+ *         description: Modelo no encontrado
+ *       409:
+ *         description: El nombre del modelo ya existe en otro registro
  *   delete:
- *     summary: Eliminar modelo
+ *     summary: Desactivar modelo (soft delete)
  *     tags: [Modelos]
  *     parameters:
  *       - in: path
@@ -84,30 +94,24 @@
  *         required: true
  *         schema:
  *           type: integer
+ *           example: 1
  *     responses:
- *       204:
- *         description: Modelo eliminado
+ *       200:
+ *         description: Modelo desactivado correctamente
+ *       400:
+ *         description: Modelo ya desactivado o tiene equipos asociados
+ *       404:
+ *         description: Modelo no encontrado
  */
 const express = require('express');
-const { body, validationResult } = require('express-validator');
 const controller = require('../controllers/modelosController');
+const { validarModelo, validarId } = require('../middlewares/validaciones');
 const router = express.Router();
 
-const validations = [
-  body('nombre_modelo').notEmpty().withMessage('Nombre de modelo es obligatorio'),
-  body('estado').optional().isInt().withMessage('Estado debe ser entero'),
-];
-
-const validate = (req, res, next) => {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
-  next();
-};
-
 router.get('/', controller.ObtenerTodos);
-router.get('/:id', controller.ObtenerPorId);
-router.post('/', validations, validate, controller.Crear);
-router.put('/:id', validations, validate, controller.Actualizar);
-router.delete('/:id', controller.remover);
+router.get('/:id', validarId, controller.ObtenerPorId);
+router.post('/', validarModelo, controller.Crear);
+router.put('/:id', validarId, validarModelo, controller.Actualizar);
+router.delete('/:id', validarId, controller.remover);
 
 module.exports = router;

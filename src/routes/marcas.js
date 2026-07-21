@@ -2,7 +2,7 @@
  * @swagger
  * tags:
  *   name: Marcas
- *   description: Gestión de marcas
+ *   description: Gestión de marcas de equipos
  *
  * /marcas:
  *   get:
@@ -23,15 +23,22 @@
  *             properties:
  *               nombre_marca:
  *                 type: string
+ *                 example: "Samsung"
  *               pais_origen:
  *                 type: string
+ *                 example: "Corea del Sur"
  *               estado:
  *                 type: integer
+ *                 example: 1
  *             required:
  *               - nombre_marca
  *     responses:
  *       201:
- *         description: Marca creada
+ *         description: Marca creada exitosamente
+ *       400:
+ *         description: Errores de validación
+ *       409:
+ *         description: La marca ya existe
  *
  * /marcas/{id}:
  *   get:
@@ -43,11 +50,12 @@
  *         required: true
  *         schema:
  *           type: integer
+ *           example: 1
  *     responses:
  *       200:
  *         description: Marca encontrada
  *       404:
- *         description: No encontrada
+ *         description: Marca no encontrada
  *   put:
  *     summary: Actualizar marca
  *     tags: [Marcas]
@@ -57,6 +65,7 @@
  *         required: true
  *         schema:
  *           type: integer
+ *           example: 1
  *     requestBody:
  *       required: true
  *       content:
@@ -66,17 +75,24 @@
  *             properties:
  *               nombre_marca:
  *                 type: string
+ *                 example: "Samsung Electronics"
  *               pais_origen:
  *                 type: string
- *               sitio_web:
- *                 type: string
+ *                 example: "Corea del Sur"
  *               estado:
- *                 type: boolean
+ *                 type: integer
+ *                 example: 1
  *     responses:
  *       200:
  *         description: Marca actualizada
+ *       400:
+ *         description: Errores de validación
+ *       404:
+ *         description: Marca no encontrada
+ *       409:
+ *         description: El nombre de marca ya existe en otro registro
  *   delete:
- *     summary: Eliminar marca
+ *     summary: Desactivar marca (soft delete)
  *     tags: [Marcas]
  *     parameters:
  *       - in: path
@@ -84,30 +100,24 @@
  *         required: true
  *         schema:
  *           type: integer
+ *           example: 1
  *     responses:
- *       204:
- *         description: Marca eliminada
+ *       200:
+ *         description: Marca desactivada correctamente
+ *       400:
+ *         description: Marca ya desactivada o tiene equipos asociados
+ *       404:
+ *         description: Marca no encontrada
  */
 const express = require('express');
-const { body, validationResult } = require('express-validator');
 const controller = require('../controllers/marcasController');
+const { validarMarca, validarId } = require('../middlewares/validaciones');
 const router = express.Router();
 
-const validations = [
-  body('nombre_marca').notEmpty().withMessage('Nombre de marca es obligatorio'),
-  body('estado').optional().isInt().withMessage('Estado debe ser entero'),
-];
-
-const validate = (req, res, next) => {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
-  next();
-};
-
 router.get('/', controller.ObtenerTodos);
-router.get('/:id', controller.ObtenerPorId);
-router.post('/', validations, validate, controller.Crear);
-router.put('/:id', validations, validate, controller.Actualizar);
-router.delete('/:id', controller.remover);
+router.get('/:id', validarId, controller.ObtenerPorId);
+router.post('/', validarMarca, controller.Crear);
+router.put('/:id', validarId, validarMarca, controller.Actualizar);
+router.delete('/:id', validarId, controller.remover);
 
 module.exports = router;

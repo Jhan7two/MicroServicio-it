@@ -23,27 +23,37 @@
  *             properties:
  *               id_cliente:
  *                 type: integer
+ *                 example: 1
  *               id_personal:
  *                 type: integer
+ *                 example: 1
  *               fecha_ingreso:
  *                 type: string
- *                 format: date-time
+ *                 format: date
+ *                 example: "2024-07-20"
  *               fecha_entrega:
  *                 type: string
- *                 format: date-time
+ *                 format: date
+ *                 example: "2024-07-25"
  *               problema_reportado:
  *                 type: string
+ *                 example: "Pantalla no enciende después de caída"
  *               costo:
  *                 type: number
+ *                 example: 150.50
  *               estado:
  *                 type: string
+ *                 enum: [pendiente, en_proceso, finalizada, Anulado]
+ *                 example: "pendiente"
  *             required:
  *               - id_cliente
  *               - id_personal
  *               - problema_reportado
  *     responses:
  *       201:
- *         description: Orden creada
+ *         description: Orden creada exitosamente
+ *       400:
+ *         description: Errores de validación
  *
  * /ordenes_servicio/{id}:
  *   get:
@@ -55,6 +65,7 @@
  *         required: true
  *         schema:
  *           type: integer
+ *           example: 1
  *     responses:
  *       200:
  *         description: Orden encontrada
@@ -69,6 +80,7 @@
  *         required: true
  *         schema:
  *           type: integer
+ *           example: 1
  *     requestBody:
  *       required: true
  *       content:
@@ -78,25 +90,37 @@
  *             properties:
  *               id_cliente:
  *                 type: integer
+ *                 example: 1
  *               id_personal:
  *                 type: integer
+ *                 example: 1
  *               fecha_ingreso:
  *                 type: string
- *                 format: date-time
+ *                 format: date
+ *                 example: "2024-07-20"
  *               fecha_entrega:
  *                 type: string
- *                 format: date-time
+ *                 format: date
+ *                 example: "2024-07-25"
  *               problema_reportado:
  *                 type: string
+ *                 example: "Pantalla no enciende, revisar conectores internos"
  *               costo:
  *                 type: number
+ *                 example: 175.00
  *               estado:
  *                 type: string
+ *                 enum: [pendiente, en_proceso, finalizada, Anulado]
+ *                 example: "en_proceso"
  *     responses:
  *       200:
  *         description: Orden actualizada
+ *       400:
+ *         description: Errores de validación
+ *       404:
+ *         description: Orden no encontrada
  *   delete:
- *     summary: Eliminar una orden de servicio
+ *     summary: Anular una orden de servicio (soft delete)
  *     tags: [OrdenesServicio]
  *     parameters:
  *       - in: path
@@ -104,9 +128,14 @@
  *         required: true
  *         schema:
  *           type: integer
+ *           example: 1
  *     responses:
- *       204:
- *         description: Orden eliminada
+ *       200:
+ *         description: Orden anulada correctamente
+ *       400:
+ *         description: Orden ya anulada o tiene diagnósticos asociados
+ *       404:
+ *         description: Orden no encontrada
  *
  * /ordenes_servicio/{id}/diagnosticos:
  *   get:
@@ -118,33 +147,22 @@
  *         required: true
  *         schema:
  *           type: integer
+ *           example: 1
  *     responses:
  *       200:
- *         description: Lista de diagnósticos
+ *         description: Lista de diagnósticos de la orden
  */
 const express = require('express');
-const { body, validationResult } = require('express-validator');
 const controller = require('../controllers/ordenesController');
 const diagnosticosController = require('../controllers/diagnosticosController');
+const { validarOrden, validarId } = require('../middlewares/validaciones');
 const router = express.Router();
 
-const validations = [
-  body('id_cliente').notEmpty().withMessage('id_cliente es obligatorio').isInt().withMessage('id_cliente debe ser entero'),
-  body('id_personal').notEmpty().withMessage('id_personal es obligatorio').isInt().withMessage('id_personal debe ser entero'),
-  body('problema_reportado').notEmpty().withMessage('problema_reportado es obligatorio'),
-];
-
-const validate = (req, res, next) => {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
-  next();
-};
-
 router.get('/', controller.ObtenerTodos);
-router.get('/:id', controller.ObtenerPorId);
-router.get('/:id/diagnosticos', diagnosticosController.ObtenerPorOrdenId);
-router.post('/', validations, validate, controller.Crear);
-router.put('/:id', validations, validate, controller.Actualizar);
-router.delete('/:id', controller.remover);
+router.get('/:id', validarId, controller.ObtenerPorId);
+router.get('/:id/diagnosticos', validarId, diagnosticosController.ObtenerPorOrdenId);
+router.post('/', validarOrden, controller.Crear);
+router.put('/:id', validarId, validarOrden, controller.Actualizar);
+router.delete('/:id', validarId, controller.remover);
 
 module.exports = router;

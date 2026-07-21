@@ -29,7 +29,11 @@ const ObtenerPorId = async (req, res, next) => {
       where: { id_personal: BigInt(id) },
       select: selectFields
     });
-    if (!trabajador) return res.status(404).json({ error: 'Personal no encontrado' });
+    if (!trabajador) {
+      const error = new Error('Personal no encontrado');
+      error.status = 404;
+      return next(error);
+    }
     res.json(trabajador);
   } catch (error) {
     next(error);
@@ -39,6 +43,18 @@ const ObtenerPorId = async (req, res, next) => {
 const Crear = async (req, res, next) => {
   try {
     const { nombre, apellido, cargo, telefono, correo, estado } = req.body;
+    
+    // Verificar si el correo ya existe
+    const correoExistente = await prisma.personal.findFirst({
+      where: { correo }
+    });
+    
+    if (correoExistente) {
+      const error = new Error('Ya existe un personal con este correo electrónico');
+      error.status = 409;
+      return next(error);
+    }
+    
     const trabajador = await prisma.personal.create({
       data: { nombre, apellido, cargo, telefono, correo, estado },
       select: selectFields
@@ -53,6 +69,34 @@ const Actualizar = async (req, res, next) => {
   try {
     const { id } = req.params;
     const { nombre, apellido, cargo, telefono, correo, estado } = req.body;
+    
+    // Verificar si el registro existe antes de actualizar
+    const personalExistente = await prisma.personal.findUnique({
+      where: { id_personal: BigInt(id) }
+    });
+    
+    if (!personalExistente) {
+      const error = new Error('El personal que intentas actualizar no existe');
+      error.status = 404;
+      return next(error);
+    }
+    
+    // Si se cambia el correo, verificar que no exista en otro registro
+    if (correo && correo !== personalExistente.correo) {
+      const correoExistente = await prisma.personal.findFirst({
+        where: { 
+          correo,
+          id_personal: { not: BigInt(id) }
+        }
+      });
+      
+      if (correoExistente) {
+        const error = new Error('Ya existe otro personal con este correo electrónico');
+        error.status = 409;
+        return next(error);
+      }
+    }
+    
     const trabajador = await prisma.personal.update({
       where: { id_personal: BigInt(id) },
       data: { nombre, apellido, cargo, telefono, correo, estado },
@@ -67,6 +111,38 @@ const Actualizar = async (req, res, next) => {
 const remover = async (req, res, next) => {
   try {
     const { id } = req.params;
+    
+    // Verificar si el registro existe antes de desactivar
+    const personalExistente = await prisma.personal.findUnique({
+      where: { id_personal: BigInt(id) }
+    });
+    
+    if (!personalExistente) {
+      const error = new Error('El personal que intentas desactivar no existe');
+      error.status = 404;
+      return next(error);
+    }
+    
+    if (personalExistente.estado === 0) {
+      const error = new Error('El personal ya está desactivado');
+      error.status = 400;
+      return next(error);
+    }
+    
+    // Verificar si tiene órdenes activas
+    const ordenesActivas = await prisma.orden.count({
+      where: { 
+        id_personal: BigInt(id),
+        estado: { not: 'Anulado' }
+      }
+    });
+    
+    if (ordenesActivas > 0) {
+      const error = new Error(`No se puede desactivar el personal porque tiene ${ordenesActivas} orden(es) de servicio activa(s)`);
+      error.status = 400;
+      return next(error);
+    }
+    
     // Soft delete: cambiar estado a 0 (inactivo) en lugar de eliminar
     const trabajador = await prisma.personal.update({
       where: { id_personal: BigInt(id) },
@@ -78,5 +154,7 @@ const remover = async (req, res, next) => {
     next(error);
   }
 };
+
+module.exports = { ObtenerTodos, ObtenerPorId, Crear, Actualizar, remover };
 
 module.exports = { ObtenerTodos, ObtenerPorId, Crear, Actualizar, remover };

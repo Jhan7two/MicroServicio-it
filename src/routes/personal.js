@@ -23,25 +23,34 @@
  *             properties:
  *               nombre:
  *                 type: string
+ *                 example: "Juan"
  *               apellido:
  *                 type: string
+ *                 example: "Pérez"
  *               cargo:
  *                 type: string
+ *                 example: "Técnico Senior"
  *               telefono:
  *                 type: string
+ *                 example: "77712345"
  *               correo:
  *                 type: string
+ *                 example: "juan.perez@empresa.com"
  *               estado:
  *                 type: integer
  *                 description: "Estado del trabajador (1 para activo, 0 para inactivo)"
+ *                 example: 1
  *             required:
  *               - nombre
  *               - apellido
- *               - cargo
  *               - correo
  *     responses:
  *       201:
- *         description: Personal creado
+ *         description: Personal creado exitosamente
+ *       400:
+ *         description: Errores de validación
+ *       409:
+ *         description: El correo ya existe
  *
  * /personal/{id}:
  *   get:
@@ -53,11 +62,12 @@
  *         required: true
  *         schema:
  *           type: integer
+ *           example: 1
  *     responses:
  *       200:
  *         description: Personal encontrado
  *       404:
- *         description: No encontrado
+ *         description: Personal no encontrado
  *   put:
  *     summary: Actualizar personal
  *     tags: [Personal]
@@ -67,6 +77,7 @@
  *         required: true
  *         schema:
  *           type: integer
+ *           example: 1
  *     requestBody:
  *       required: true
  *       content:
@@ -76,22 +87,33 @@
  *             properties:
  *               nombre:
  *                 type: string
+ *                 example: "Juan Carlos"
  *               apellido:
  *                 type: string
+ *                 example: "Pérez López"
  *               cargo:
  *                 type: string
+ *                 example: "Técnico Senior"
  *               telefono:
  *                 type: string
+ *                 example: "77712345"
  *               correo:
  *                 type: string
+ *                 example: "juan.perez@empresa.com"
  *               estado:
  *                 type: integer
- *                 description: "Estado del trabajador (1 para activo, 0 para inactivo)"
+ *                 example: 1
  *     responses:
  *       200:
  *         description: Personal actualizado
+ *       400:
+ *         description: Errores de validación
+ *       404:
+ *         description: Personal no encontrado
+ *       409:
+ *         description: El correo ya existe en otro registro
  *   delete:
- *     summary: Eliminar personal
+ *     summary: Desactivar personal (soft delete)
  *     tags: [Personal]
  *     parameters:
  *       - in: path
@@ -99,31 +121,24 @@
  *         required: true
  *         schema:
  *           type: integer
+ *           example: 1
  *     responses:
- *       204:
- *         description: Personal eliminado
+ *       200:
+ *         description: Personal desactivado correctamente
+ *       400:
+ *         description: Personal ya desactivado o tiene órdenes activas
+ *       404:
+ *         description: Personal no encontrado
  */
 const express = require('express');
-const { body, validationResult } = require('express-validator');
 const controller = require('../controllers/personalController');
+const { validarPersonal, validarId } = require('../middlewares/validaciones');
 const router = express.Router();
 
-const validations = [
-  body('nombre').notEmpty().withMessage('Nombre es obligatorio'),
-  body('apellido').notEmpty().withMessage('Apellido es obligatorio'),
-  body('correo').optional().isEmail().withMessage('Correo no es válido'),
-];
-
-const validate = (req, res, next) => {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
-  next();
-};
-
 router.get('/', controller.ObtenerTodos);
-router.get('/:id', controller.ObtenerPorId);
-router.post('/', validations, validate, controller.Crear);
-router.put('/:id', validations, validate, controller.Actualizar);
-router.delete('/:id', controller.remover);
+router.get('/:id', validarId, controller.ObtenerPorId);
+router.post('/', validarPersonal, controller.Crear);
+router.put('/:id', validarId, validarPersonal, controller.Actualizar);
+router.delete('/:id', validarId, controller.remover);
 
 module.exports = router;

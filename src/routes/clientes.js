@@ -23,24 +23,37 @@
  *             properties:
  *               nombre:
  *                 type: string
+ *                 example: "Juan Carlos"
  *               apellido:
  *                 type: string
-*               nit_ci:
-*                 type: string
+ *                 example: "Pérez López"
+ *               nit_ci:
+ *                 type: string
+ *                 example: "1234567"
  *               telefono:
  *                 type: string
+ *                 example: "77712345"
  *               correo:
  *                 type: string
+ *                 example: "juan.perez@correo.com"
  *               direccion:
  *                 type: string
-*               estado:
-*                 type: integer
+ *                 example: "Av. Ballivián #123"
+ *               estado:
+ *                 type: integer
+ *                 example: 1
  *             required:
  *               - nombre
  *               - apellido
+ *               - nit_ci
+ *               - correo
  *     responses:
  *       201:
- *         description: Cliente creado
+ *         description: Cliente creado exitosamente
+ *       400:
+ *         description: Errores de validación
+ *       409:
+ *         description: El correo o NIT/CI ya existe
  *
  * /clientes/{id}:
  *   get:
@@ -52,6 +65,7 @@
  *         required: true
  *         schema:
  *           type: integer
+ *           example: 1
  *     responses:
  *       200:
  *         description: Cliente encontrado
@@ -66,6 +80,7 @@
  *         required: true
  *         schema:
  *           type: integer
+ *           example: 1
  *     requestBody:
  *       required: true
  *       content:
@@ -75,23 +90,36 @@
  *             properties:
  *               nombre:
  *                 type: string
+ *                 example: "Juan Carlos"
  *               apellido:
  *                 type: string
+ *                 example: "Pérez López"
  *               nit_ci:
  *                 type: string
+ *                 example: "1234567"
  *               telefono:
  *                 type: string
+ *                 example: "77712345"
  *               correo:
  *                 type: string
+ *                 example: "juan.perez@correo.com"
  *               direccion:
  *                 type: string
+ *                 example: "Av. Ballivián #123"
  *               estado:
  *                 type: integer
+ *                 example: 1
  *     responses:
  *       200:
  *         description: Cliente actualizado
+ *       400:
+ *         description: Errores de validación
+ *       404:
+ *         description: Cliente no encontrado
+ *       409:
+ *         description: El correo o NIT/CI ya existe en otro registro
  *   delete:
- *     summary: Eliminar cliente
+ *     summary: Desactivar cliente (soft delete)
  *     tags: [Clientes]
  *     parameters:
  *       - in: path
@@ -99,33 +127,24 @@
  *         required: true
  *         schema:
  *           type: integer
+ *           example: 1
  *     responses:
- *       204:
- *         description: Cliente eliminado
+ *       200:
+ *         description: Cliente desactivado correctamente
+ *       400:
+ *         description: Cliente ya desactivado o tiene órdenes activas
+ *       404:
+ *         description: Cliente no encontrado
  */
 const express = require('express');
-const { body, validationResult } = require('express-validator');
 const controller = require('../controllers/clientesController');
+const { validarCliente, validarId } = require('../middlewares/validaciones');
 const router = express.Router();
 
-const validations = [
-  body('nombre').notEmpty().withMessage('Nombre es obligatorio'),
-  body('apellido').notEmpty().withMessage('Apellido es obligatorio'),
-  body('correo').optional().isEmail().withMessage('Correo no es válido'),
-    body('nit_ci').notEmpty().withMessage('Nit/Ci es obligatorio'),
-    body('estado').isInt().withMessage('Estado debe ser un número entero'),
-];
-
-const validate = (req, res, next) => {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
-  next();
-};
-
 router.get('/', controller.ObtenerTodos);
-router.get('/:id', controller.ObtenerPorId);
-router.post('/', validations, validate, controller.Crear);
-router.put('/:id', validations, validate, controller.Actualizar);
-router.delete('/:id', controller.remover);
+router.get('/:id', validarId, controller.ObtenerPorId);
+router.post('/', validarCliente, controller.Crear);
+router.put('/:id', validarId, validarCliente, controller.Actualizar);
+router.delete('/:id', validarId, controller.remover);
 
 module.exports = router;

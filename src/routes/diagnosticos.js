@@ -23,25 +23,36 @@
  *             properties:
  *               id_orden:
  *                 type: integer
+ *                 example: 1
  *               id_equipo:
  *                 type: integer
+ *                 example: 1
  *               descripcion:
  *                 type: string
+ *                 example: "Pantalla rota, cristal fracturado en esquina superior derecha"
  *               solucion:
  *                 type: string
+ *                 example: "Reemplazar pantalla LCD completa"
  *               fecha:
  *                 type: string
  *                 format: date
+ *                 example: "2024-07-20"
  *               observacion:
  *                 type: string
+ *                 example: "Cliente reporta que el equipo se cayó desde 1 metro"
  *               estado:
  *                 type: string
+ *                 enum: [pendiente, confirmado, reparado]
+ *                 example: "pendiente"
  *             required:
  *               - id_orden
  *               - id_equipo
+ *               - descripcion
  *     responses:
  *       201:
- *         description: Diagnóstico creado
+ *         description: Diagnóstico creado exitosamente
+ *       400:
+ *         description: Errores de validación
  *
  * /diagnosticos/{id}:
  *   get:
@@ -53,11 +64,12 @@
  *         required: true
  *         schema:
  *           type: integer
+ *           example: 1
  *     responses:
  *       200:
  *         description: Diagnóstico encontrado
  *       404:
- *         description: No encontrado
+ *         description: Diagnóstico no encontrado
  *   put:
  *     summary: Actualizar diagnóstico
  *     tags: [Diagnosticos]
@@ -67,6 +79,7 @@
  *         required: true
  *         schema:
  *           type: integer
+ *           example: 1
  *     requestBody:
  *       required: true
  *       content:
@@ -76,24 +89,36 @@
  *             properties:
  *               id_orden:
  *                 type: integer
+ *                 example: 1
  *               id_equipo:
  *                 type: integer
+ *                 example: 1
  *               descripcion:
  *                 type: string
+ *                 example: "Pantalla rota, cristal fracturado en esquina superior derecha"
  *               solucion:
  *                 type: string
+ *                 example: "Pantalla LCD reemplazada exitosamente"
  *               fecha:
  *                 type: string
  *                 format: date
+ *                 example: "2024-07-20"
  *               observacion:
  *                 type: string
+ *                 example: "Reparación completada, equipo funciona correctamente"
  *               estado:
  *                 type: string
+ *                 enum: [pendiente, confirmado, reparado]
+ *                 example: "reparado"
  *     responses:
  *       200:
  *         description: Diagnóstico actualizado
+ *       400:
+ *         description: Errores de validación
+ *       404:
+ *         description: Diagnóstico no encontrado
  *   delete:
- *     summary: Eliminar diagnóstico
+ *     summary: Reiniciar diagnóstico a estado pendiente
  *     tags: [Diagnosticos]
  *     parameters:
  *       - in: path
@@ -101,9 +126,14 @@
  *         required: true
  *         schema:
  *           type: integer
+ *           example: 1
  *     responses:
- *       204:
- *         description: Diagnóstico eliminado
+ *       200:
+ *         description: Diagnóstico reiniciado a estado pendiente
+ *       400:
+ *         description: El diagnóstico ya está en estado pendiente
+ *       404:
+ *         description: Diagnóstico no encontrado
  *
  * /diagnosticos/orden/{id}:
  *   get:
@@ -115,31 +145,23 @@
  *         required: true
  *         schema:
  *           type: integer
+ *           example: 1
  *     responses:
  *       200:
- *         description: Lista de diagnósticos por orden
+ *         description: Lista de diagnósticos de la orden
+ *       404:
+ *         description: Orden no encontrada
  */
 const express = require('express');
-const { body, validationResult } = require('express-validator');
 const controller = require('../controllers/diagnosticosController');
+const { validarDiagnostico, validarId } = require('../middlewares/validaciones');
 const router = express.Router();
 
-const validations = [
-  body('id_orden').notEmpty().withMessage('id_orden es obligatorio').isInt().withMessage('id_orden debe ser entero'),
-  body('id_equipo').notEmpty().withMessage('id_equipo es obligatorio').isInt().withMessage('id_equipo debe ser entero'),
-];
-
-const validate = (req, res, next) => {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
-  next();
-};
-
 router.get('/', controller.ObtenerTodos);
-router.get('/:id', controller.ObtenerPorId);
-router.get('/orden/:id', controller.ObtenerPorOrdenId);
-router.post('/', validations, validate, controller.Crear);
-router.put('/:id', validations, validate, controller.Actualizar);
-router.delete('/:id', controller.remover);
+router.get('/:id', validarId, controller.ObtenerPorId);
+router.get('/orden/:id', validarId, controller.ObtenerPorOrdenId);
+router.post('/', validarDiagnostico, controller.Crear);
+router.put('/:id', validarId, validarDiagnostico, controller.Actualizar);
+router.delete('/:id', validarId, controller.remover);
 
 module.exports = router;
